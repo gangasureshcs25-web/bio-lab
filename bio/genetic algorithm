@@ -1,0 +1,158 @@
+import random
+
+
+
+def fitness(chromosome):
+    """
+    Convert binary chromosome to decimal and
+    calculate fitness as x^2.
+    """
+    x = int("".join(map(str, chromosome)), 2)
+    return x ** 2
+
+
+
+
+POPULATION_SIZE = 10
+CHROMOSOME_LENGTH = 5
+MUTATION_RATE = 0.01
+CROSSOVER_RATE = 0.8
+GENERATIONS = 50
+
+
+
+
+def create_population():
+    return [
+        [random.randint(0, 1) for _ in range(CHROMOSOME_LENGTH)]
+        for _ in range(POPULATION_SIZE)
+    ]
+
+
+def selection(population):
+    """
+    Roulette-wheel selection.
+    Individuals with higher fitness have
+    a higher probability of being selected.
+    """
+    fitness_values = [fitness(ind) for ind in population]
+
+    total_fitness = sum(fitness_values)
+
+    if total_fitness == 0:
+        return random.choice(population).copy()
+
+    probabilities = [
+        f / total_fitness for f in fitness_values
+    ]
+
+    selected = random.choices(
+        population,
+        weights=probabilities,
+        k=1
+    )
+
+    return selected[0].copy()
+
+
+
+def crossover(parent1, parent2):
+    """
+    Single-point crossover.
+    """
+    if random.random() < CROSSOVER_RATE:
+        point = random.randint(1, CHROMOSOME_LENGTH - 1)
+
+        child1 = parent1[:point] + parent2[point:]
+        child2 = parent2[:point] + parent1[point:]
+
+        return child1, child2
+
+    return parent1.copy(), parent2.copy()
+
+
+
+
+def mutation(chromosome):
+    """
+    Flip each bit with the given mutation probability.
+    """
+    for i in range(CHROMOSOME_LENGTH):
+        if random.random() < MUTATION_RATE:
+            chromosome[i] = 1 - chromosome[i]
+
+    return chromosome
+
+
+
+def genetic_algorithm():
+
+    population = create_population()
+
+    best_solution = None
+    best_fitness = float("-inf")
+
+    for generation in range(GENERATIONS):
+
+        # Evaluate fitness
+        fitness_values = [
+            fitness(individual)
+            for individual in population
+        ]
+
+        # Find best individual in current generation
+        max_index = fitness_values.index(max(fitness_values))
+        current_best = population[max_index]
+        current_fitness = fitness_values[max_index]
+
+        # Update global best
+        if current_fitness > best_fitness:
+            best_fitness = current_fitness
+            best_solution = current_best.copy()
+
+        # Display progress
+        x = int("".join(map(str, current_best)), 2)
+
+        print(
+            f"Generation {generation + 1}: "
+            f"x = {x}, fitness = {current_fitness}"
+        )
+
+        # Create next generation
+        new_population = []
+
+        while len(new_population) < POPULATION_SIZE:
+
+            # Selection
+            parent1 = selection(population)
+            parent2 = selection(population)
+
+            # Crossover
+            child1, child2 = crossover(parent1, parent2)
+
+            # Mutation
+            child1 = mutation(child1)
+            child2 = mutation(child2)
+
+            new_population.append(child1)
+
+            if len(new_population) < POPULATION_SIZE:
+                new_population.append(child2)
+
+        population = new_population
+
+    return best_solution, best_fitness
+
+
+
+
+best_solution, best_fitness = genetic_algorithm()
+
+best_x = int("".join(map(str, best_solution)), 2)
+
+print("\n-----------------------------")
+print("Best Solution Found")
+print("-----------------------------")
+print("Chromosome :", best_solution)
+print("x          :", best_x)
+print("Maximum f(x):", best_fitness)
