@@ -1,0 +1,63 @@
+import numpy as np
+import pandas as pd
+
+def evaluate_portfolio(price_df, weights, risk_free_rate=0.04):
+  
+    weights = np.array(weights)
+    if not np.isclose(np.sum(weights), 1.0):
+        raise ValueError("Portfolio weights must sum to 1.0")
+
+ 
+    daily_returns = price_df.pct_change().dropna()
+    
+ 
+    portfolio_daily_returns = daily_returns.dot(weights)
+    
+
+    total_cumulative_return = (1 + portfolio_daily_returns).prod() - 1
+    
+  
+    num_days = len(portfolio_daily_returns)
+    annualized_return = (1 + total_cumulative_return) ** (252 / num_days) - 1
+    
+    
+    annualized_volatility = portfolio_daily_returns.std() * np.sqrt(252)
+    
+   
+    sharpe_ratio = (annualized_return - risk_free_rate) / annualized_volatility
+    
+   
+    cumulative_wealth = (1 + portfolio_daily_returns).cumprod()
+    running_max = cumulative_wealth.cummax()
+    drawdown = (cumulative_wealth - running_max) / running_max
+    max_drawdown = drawdown.min()
+
+    return {
+        "Total Cumulative Return": f"{total_cumulative_return:.2%}",
+        "Annualized Return": f"{annualized_return:.2%}",
+        "Annualized Volatility": f"{annualized_volatility:.2%}",
+        "Sharpe Ratio": f"{sharpe_ratio:.2f}",
+        "Maximum Drawdown": f"{max_drawdown:.2%}"
+    }
+
+
+if __name__ == "__main__":
+
+    np.random.seed(42)
+    dates = pd.date_range(start="2024-01-01", periods=504, freq="B")
+    
+ 
+    simulated_returns = np.random.normal(loc=0.0005, scale=0.01, size=(504, 3))
+    prices = 100 * np.exp(np.cumsum(simulated_returns, axis=0))
+    
+    df_prices = pd.DataFrame(prices, index=dates, columns=["Stock_A", "Stock_B", "Bond_C"])
+    
+   
+    portfolio_weights = [0.4, 0.4, 0.2] 
+    
+   
+    metrics = evaluate_portfolio(df_prices, portfolio_weights)
+    
+    print("--- Portfolio Evaluation Results ---")
+    for metric, value in metrics.items():
+        print(f"{metric}: {value}")
