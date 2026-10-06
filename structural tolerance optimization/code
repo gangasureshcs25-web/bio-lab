@@ -1,0 +1,53 @@
+import numpy as np
+from scipy.optimize import minimize
+
+
+def objective_cost(tolerances, cost_coefficients):
+    return np.sum(cost_coefficients / tolerances)
+
+
+def assembly_tolerance_constraint(tolerances, max_allowable_gap):
+ 
+    total_rss_tolerance = np.sqrt(np.sum(tolerances**2))
+
+    return max_allowable_gap - total_rss_tolerance
+
+
+cost_coefficients = np.array([1.0, 1.5, 3.0]) 
+max_allowable_gap = 1.5
+initial_tolerances = np.array([0.5, 0.5, 0.5])
+
+
+bounds = [(0.05, 2.0), (0.05, 2.0), (0.05, 2.0)]
+
+
+constraints = {
+    'type': 'ineq', 
+    'fun': assembly_tolerance_constraint, 
+    'args': (max_allowable_gap,)
+}
+
+
+result = minimize(
+    fun=objective_cost,
+    x0=initial_tolerances,
+    args=(cost_coefficients,),
+    method='SLSQP',
+    bounds=bounds,
+    constraints=constraints
+)
+
+
+if result.success:
+    optimized_tolerances = result.x
+    minimized_cost = result.fun
+    actual_rss = np.sqrt(np.sum(optimized_tolerances**2))
+    
+    print("--- Optimization Successful ---")
+    print(f"Optimal Tolerance Part 1: {optimized_tolerances[0]:.4f} mm")
+    print(f"Optimal Tolerance Part 2: {optimized_tolerances[1]:.4f} mm")
+    print(f"Optimal Tolerance Part 3: {optimized_tolerances[2]:.4f} mm")
+    print(f"\nTotal Achieved RSS Stackup: {actual_rss:.4f} mm (Limit: {max_allowable_gap} mm)")
+    print(f"Minimum Production Cost Vector: ${minimized_cost:.2f}")
+else:
+    print("Optimization failed:", result.message)
